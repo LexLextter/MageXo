@@ -14,3 +14,15 @@ Since TypeScript cannot handle type information for `.vue` imports, they are shi
 2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
 
 You can learn more about Take Over mode [here](https://github.com/johnsoncodehk/volar/discussions/471).
+
+
+## There are three  main issues I had with this task. 
+ 
+  First was the CORSE error which I could not resolve and so I had to simply overlook it with a browser plugin. -> 
+  Second was my lack of experience with GraphQL - this took the most time
+  The last issue is with testing libraries. There are no unit tests here exactly because it would take a lot of time and it feels more reasonable to say that I worked with Vue 2 and not 3. The amount of changes, together with graphQl for test was too much. So I decided to send the aplication without unit tests anyway. 
+
+This took me about 2MD give or take, mostly because of research. 
+
+The aplication has a fairly light design and it could be split in to several components. However the amount of code is pretty low, so it could fit in to one component in my opinion. Since most functionality is done from the states of the queries, the component only handles fetching the data and showing the template with a simple style. 
+Theoretically pagination and navigations could be their own components, while fetching the data stand alone service. 
