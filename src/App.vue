@@ -1,96 +1,104 @@
 <template>
-  <ul class="nav" v-if="categories">
-    <li
-      @mouseover="subMenu = category.children"
-      @click="activeCategory = category.name"
-      class="name"
-      v-for="category of categories.filter((c) => c.level === 2)"
-      :key="category.id"
-    >
-      <div>{{ category.name }}</div>
-    </li>
-  </ul>
-  <hr />
-  <section v-if="subMenu.length > 0">
-    <ul class="nav" v-if="categories">
-      <li
-        @click="activeCategory = category.name"
-        class="name"
-        v-for="category of subMenu"
-        :key="category.id"
-      >
-        <div>{{ category.name }}</div>
-      </li>
-    </ul>
-  </section>
-  <section class="products">
-    <div
-      class="product"
-      v-for="product of getCategory.products.items"
-      :key="product.uid"
-    >
-      <span v-html="product.description.html"></span>
-    </div>
-  </section>
+  <div v-if="loading">Loading...</div>
+  <div v-else-if="categories">
+    <section @mouseleave="subMenu = []">
+      <ul class="nav" v-if="categories">
+        <li
+          @mouseover="subMenu = category.children"
+          @click="handleUpdate(category)"
+          class="name"
+          v-for="category of categories.filter((c) => c.level === 2)"
+          :key="category.id"
+        >
+          <div>{{ category.name }}</div>
+        </li>
+      </ul>
+      <hr />
+      <section v-if="subMenu.length > 0">
+        <ul class="nav" v-if="categories">
+          <li
+            @click="handleUpdate(category)"
+            class="name"
+            v-for="category of subMenu"
+            :key="category.id"
+          >
+            <div>{{ category.name }}</div>
+          </li>
+        </ul>
+      </section>
+    </section>
+    <hr />
+    <h1 class="header">{{ activeCategory.name }}</h1>
+    <div v-if="loading_products">Loading...</div>
+    <section v-else-if="items" class="products">
+      <div class="product" v-for="product of items" :key="product.uid">
+        <span v-html="product.description.html"></span>
+        <img :src="product.image.url" class="img" />
+      </div>
+      <div v-if="page_info && page_info.total_pages > 1">
+        <button class="btn" @click="handlePagination(1)">{{ "<<" }}</button>
+        <button
+          class="btn"
+          :class="{
+            active: page === page_info.current_page,
+          }"
+          v-for="page in page_info.total_pages"
+          :key="page"
+          @click="handlePagination(page)"
+        >
+          {{ page }}
+        </button>
+        <button class="btn" @click="handlePagination(page_info.total_pages)">
+          >>
+        </button>
+      </div>
+    </section>
+  </div>
 </template>
 
 
 <script>
 import { useQuery } from "@vue/apollo-composable";
-import { computed } from "vue";
+import { computed, reactive } from "vue";
 
 import gql from "graphql-tag";
+
+// Fix sub categories to give back uid
+// Fix pagination style
+// Fix Cards to show title, picture and price
+// Fix Nav styles
+// default products are wierd
 
 export default {
   name: "App",
   data: () => {
     return {
-      activeCategory: "Tops",
+      activeCategory: { uid: "MTg=", name: "Tops" },
       subMenu: false,
     };
   },
-  computed: {
-    getCategory() {
-      console.log(this.categories);
-      return this.categories.filter(
-        (cat) => cat.name === this.activeCategory
-      )[0];
+  methods: {
+    handleUpdate(category) {
+      console.log(category);
+      this.updateProducts(category.uid);
+      this.activeCategory = category;
+    },
+
+    handlePagination(page) {
+      this.updateProducts(
+        this.activeCategory.uid,
+        page,
+        this.page_info.page_size
+      );
     },
   },
-  setup() {
-    /*  const { result } = useQuery(gql`
-      query getCategories {
-        categories(filters: {}) {
-          items {
-            name
-            description
-            type
-            display_mode
-            image
-            products {
-              items {
-                name
-                image {
-                  position
-                }
-                description {
-                  html
-                }
-                reviews {
-                  items {
-                    nickname
-                    text
-                  }
-                }
-              }
-            }
-            product_count
-          }
-        }
-      }
-    `); */
 
-    const { result } = useQuery(
+  setup(activeCategory) {
+    const variables = reactive({
+      uid: activeCategory.uid,
+    });
+
+    const { result, loading } = useQuery(
       gql`
         query getCategories {
           categories(filters: {}) {
@@ -102,6 +110,7 @@ export default {
               level
               children {
                 name
+                uid
               }
               breadcrumbs {
                 category_name
@@ -115,96 +124,61 @@ export default {
               image
               path
               path_in_store
-              products {
-                items {
-                  price_range {
-                    maximum_price {
-                      discount {
-                        amount_off
-                        percent_off
-                      }
-                      final_price {
-                        currency
-                        value
-                      }
-                      fixed_product_taxes {
-                        amount {
-                          currency
-                          value
-                        }
-                        label
-                      }
-                      regular_price {
-                        currency
-                        value
-                      }
-                    }
-                    minimum_price {
-                      regular_price {
-                        currency
-                        value
-                      }
-                    }
-                  }
-                  price_tiers {
-                    discount {
-                      amount_off
-                      percent_off
-                    }
-                    final_price {
-                      currency
-                      value
-                    }
-                    quantity
-                  }
-                  rating_summary
-                  thumbnail {
-                    disabled
-                    label
-                    position
-                    url
-                  }
-                  uid
-                  short_description {
-                    html
-                  }
-                  sku
-                  small_image {
-                    disabled
-                    label
-                    position
-                    url
-                  }
-                  staged
-                  country_of_manufacture
-                  meta_description
-                  meta_keyword
-                  meta_title
-                  name
-                  image {
-                    position
-                  }
-                  description {
-                    html
-                  }
-                  reviews {
-                    items {
-                      nickname
-                      text
-                    }
-                  }
-                }
-              }
-              product_count
             }
           }
         }
       `
     );
 
-    const categories = computed(() => result.value?.categories.items ?? []);
+    const products = useQuery(
+      gql`
+        query getProducts($uid: String, $pageSize: Int, $currentPage: Int) {
+          products(
+            filter: { category_uid: { eq: $uid } }
+            pageSize: $pageSize
+            currentPage: $currentPage
+          ) {
+            page_info {
+              page_size
+              current_page
+              total_pages
+            }
+            items {
+              name
+              image {
+                url
+              }
+              description {
+                html
+              }
+            }
+          }
+        }
+      `,
+      variables,
+      { notifyOnNetworkStatusChange: true, awaitRefetchQueries: true }
+    );
 
-    return { result, categories };
+    const updateProducts = (uid, currentPage, pageSize) => {
+      variables.uid = uid;
+      variables.currentPage = currentPage;
+      variables.pageSize = pageSize;
+    };
+
+    const categories = computed(() => result.value?.categories.items ?? []);
+    const items = computed(() => products.result.value?.products.items ?? []);
+    const page_info = computed(
+      () => products.result.value?.products.page_info ?? []
+    );
+
+    return {
+      loading_products: products.loading,
+      page_info,
+      categories,
+      items,
+      loading,
+      updateProducts,
+    };
   },
 };
 </script>
@@ -245,5 +219,31 @@ export default {
   gap: 10px;
   width: fit-content;
   flex-wrap: wrap;
+}
+
+.header {
+  display: flex;
+  justify-content: center;
+}
+
+.img {
+  width: 150px;
+  height: 150px;
+}
+
+.btn {
+  width: 30px;
+  height: 30px;
+  background-color: white;
+  color: black;
+  border: none;
+}
+.active {
+  background-color: rgb(143, 143, 221);
+}
+
+.btn:hover {
+  cursor: pointer;
+  background-color: gray;
 }
 </style>
