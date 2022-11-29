@@ -9,3 +9,9 @@
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 }
+
+@media only screen and (max-width: 600px) {
+  ul {
+    gap: 5px;
+  }
+}

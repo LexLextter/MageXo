@@ -1,7 +1,7 @@
 <template>
   <div v-if="loading">Loading...</div>
   <div v-else-if="categories">
-    <section>
+    <section style="position: relative">
       <ul class="menu" v-if="categories">
         <li
           @mouseover="subMenu = category.children"
@@ -26,7 +26,7 @@
         </ul>
       </section>
     </section>
-    <hr />
+
     <h1 class="header">{{ activeCategory.name }}</h1>
     <div v-if="loading_products">Loading...</div>
     <section v-else-if="items">
@@ -263,26 +263,27 @@ export default {
 </script>
 
 
-<style scoped>
+<style >
 .menu {
   display: flex;
   list-style-type: none;
+  flex-wrap: wrap;
   gap: 10px;
   width: 100%;
-  padding: 0;
+  padding: 5px 0 5px 0;
   justify-content: center;
 }
 
 .menu .category-name {
   padding: 5px;
-  height: 80px;
+  height: 25px;
   width: fit-content;
   text-align: center;
 }
 
 .sub-menu {
   position: absolute;
-  top: 5%;
+  top: 13%;
 }
 
 .category-name:hover {
@@ -305,6 +306,7 @@ export default {
 }
 
 .header {
+  padding-top: 20px;
   display: flex;
   justify-content: center;
 }
