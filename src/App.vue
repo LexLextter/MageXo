@@ -1,24 +1,23 @@
 <template>
   <div v-if="loading">Loading...</div>
   <div v-else-if="categories">
-    <section @mouseleave="subMenu = []">
-      <ul class="nav" v-if="categories">
+    <section>
+      <ul class="menu" v-if="categories">
         <li
           @mouseover="subMenu = category.children"
           @click="handleUpdate(category)"
-          class="name"
+          class="category-name"
           v-for="category of categories.filter((c) => c.level === 2)"
           :key="category.id"
         >
           <div>{{ category.name }}</div>
         </li>
       </ul>
-      <hr />
       <section v-if="subMenu.length > 0">
-        <ul class="nav" v-if="categories">
+        <ul class="menu sub-menu" v-if="categories">
           <li
             @click="handleUpdate(category)"
-            class="name"
+            class="category-name"
             v-for="category of subMenu"
             :key="category.id"
           >
@@ -30,15 +29,21 @@
     <hr />
     <h1 class="header">{{ activeCategory.name }}</h1>
     <div v-if="loading_products">Loading...</div>
-    <section v-else-if="items" class="products">
-      <div class="product" v-for="product of items" :key="product.uid">
-        <span v-html="product.description.html"></span>
-        <img :src="product.image.url" class="img" />
+    <section v-else-if="items">
+      <div class="products">
+        <div class="product" v-for="product of items" :key="product.uid">
+          <img :src="product.image.url" class="img" />
+          <span>{{ product.name }}</span>
+          <span
+            >{{ product.price_range.maximum_price.final_price.value }}
+            {{ product.price_range.maximum_price.final_price.currency }}</span
+          >
+        </div>
       </div>
-      <div v-if="page_info && page_info.total_pages > 1">
-        <button class="btn" @click="handlePagination(1)">{{ "<<" }}</button>
+      <div class="pagination" v-if="page_info && page_info.total_pages > 1">
+        <button class="page" @click="handlePagination(1)">{{ "<<" }}</button>
         <button
-          class="btn"
+          class="page"
           :class="{
             active: page === page_info.current_page,
           }"
@@ -48,7 +53,7 @@
         >
           {{ page }}
         </button>
-        <button class="btn" @click="handlePagination(page_info.total_pages)">
+        <button class="page" @click="handlePagination(page_info.total_pages)">
           >>
         </button>
       </div>
@@ -63,11 +68,7 @@ import { computed, reactive } from "vue";
 
 import gql from "graphql-tag";
 
-// Fix sub categories to give back uid
-// Fix pagination style
-// Fix Cards to show title, picture and price
-// Fix Nav styles
-// default products are wierd
+// default products are weird
 
 export default {
   name: "App",
@@ -79,7 +80,6 @@ export default {
   },
   methods: {
     handleUpdate(category) {
-      console.log(category);
       this.updateProducts(category.uid);
       this.activeCategory = category;
     },
@@ -93,9 +93,9 @@ export default {
     },
   },
 
-  setup(activeCategory) {
+  setup() {
     const variables = reactive({
-      uid: activeCategory.uid,
+      uid: "MTg=",
     });
 
     const { result, loading } = useQuery(
@@ -148,8 +148,16 @@ export default {
               image {
                 url
               }
-              description {
-                html
+              price_tiers {
+                quantity
+              }
+              price_range {
+                maximum_price {
+                  final_price {
+                    currency
+                    value
+                  }
+                }
               }
             }
           }
@@ -185,34 +193,38 @@ export default {
 
 
 <style scoped>
-.nav {
+.menu {
   display: flex;
   list-style-type: none;
   gap: 10px;
-  width: 150px;
+  width: 100%;
   padding: 0;
-  height: 100px;
+  justify-content: center;
 }
 
-.nav .name {
-  border: solid pink 1px;
+.menu .category-name {
   padding: 5px;
   height: 80px;
-  width: 117px;
+  width: fit-content;
   text-align: center;
 }
 
-.name:hover {
+.sub-menu {
+  position: absolute;
+  top: 5%;
+}
+
+.category-name:hover {
   cursor: pointer;
-  background-color: aqua;
-  color: black;
+  font-weight: bold;
 }
 
 .product {
-  border: solid 1px blue;
-  padding: 5px;
-  width: 300px;
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 5px;
+  width: inherit;
 }
 .products {
   display: flex;
@@ -227,11 +239,11 @@ export default {
 }
 
 .img {
-  width: 150px;
-  height: 150px;
+  width: 340px;
+  height: 375px;
 }
 
-.btn {
+.page {
   width: 30px;
   height: 30px;
   background-color: white;
@@ -239,11 +251,15 @@ export default {
   border: none;
 }
 .active {
-  background-color: rgb(143, 143, 221);
+  border: 1px solid black;
 }
 
-.btn:hover {
+.page:hover {
   cursor: pointer;
-  background-color: gray;
+  font-weight: bold;
+}
+
+.pagination {
+  padding: 5px;
 }
 </style>
