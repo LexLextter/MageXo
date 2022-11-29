@@ -8,7 +8,7 @@
           @click="handleUpdate(category)"
           class="category-name"
           v-for="category of categories.filter((c) => c.level === 2)"
-          :key="category.id"
+          :key="category.uid"
         >
           <div>{{ category.name }}</div>
         </li>
@@ -19,7 +19,7 @@
             @click="handleUpdate(category)"
             class="category-name"
             v-for="category of subMenu"
-            :key="category.id"
+            :key="category.uid"
           >
             <div>{{ category.name }}</div>
           </li>
@@ -31,7 +31,7 @@
     <div v-if="loading_products">Loading...</div>
     <section v-else-if="items">
       <div class="products">
-        <div class="product" v-for="product of items" :key="product.uid">
+        <div class="product" v-for="product of items" :key="product.name">
           <img :src="product.image.url" class="img" />
           <span>{{ product.name }}</span>
           <span
@@ -62,29 +62,91 @@
 </template>
 
 
-<script>
+<script lang="ts">
 import { useQuery } from "@vue/apollo-composable";
-import { computed, reactive } from "vue";
+import { computed, ComputedRef, reactive, Ref } from "vue";
 
 import gql from "graphql-tag";
 
-// default products are weird
+interface Category {
+  uid: string;
+  name: string;
+  level: number;
+  children: Category[];
+  position?: string;
+  staged?: string;
+  breadcrumbs?: {
+    category_name: string;
+  };
+  meta_description?: string;
+  meta_keywords?: string;
+  meta_title?: string;
+  description?: string;
+  type?: string;
+  display_mode?: string;
+  image?: string;
+  path: string;
+  path_in_store?: string;
+}
+interface Variables {
+  uid: string;
+  currentPage?: number;
+  pageSize?: number;
+}
+interface Products {
+  name: string;
+  page_size: number;
+  current_page: number;
+  total_pages: number;
+  image: {
+    url: string;
+  };
+  price_tiers?: {
+    quantity?: [];
+  };
+  price_range: {
+    maximum_price: {
+      final_price: {
+        currency: string;
+        value: number;
+      };
+    };
+  };
+}
+
+interface PageInfo {
+  page_size: number;
+  current_page: number;
+  total_pages: number;
+}
+interface Data {
+  loading_products: Ref<boolean>;
+  page_info: ComputedRef<PageInfo>;
+  categories: ComputedRef<Category[]>;
+  items: ComputedRef<Products[]>;
+  loading: Ref<boolean>;
+  updateProducts: (
+    uid: string,
+    current_page: number,
+    page_size: number
+  ) => void;
+}
 
 export default {
   name: "App",
   data: () => {
     return {
-      activeCategory: { uid: "MTg=", name: "Tops" },
-      subMenu: false,
+      activeCategory: { uid: "MTg=", name: "Tops", level: 2 },
+      subMenu: [] as Category[],
     };
   },
   methods: {
-    handleUpdate(category) {
-      this.updateProducts(category.uid);
+    handleUpdate(category: Category) {
+      this.updateProducts(category.uid, 1, 20);
       this.activeCategory = category;
     },
 
-    handlePagination(page) {
+    handlePagination(page: number) {
       this.updateProducts(
         this.activeCategory.uid,
         page,
@@ -94,7 +156,7 @@ export default {
   },
 
   setup() {
-    const variables = reactive({
+    const variables: Variables = reactive({
       uid: "MTg=",
     });
 
@@ -111,6 +173,7 @@ export default {
               children {
                 name
                 uid
+                level
               }
               breadcrumbs {
                 category_name
@@ -164,19 +227,27 @@ export default {
         }
       `,
       variables,
-      { notifyOnNetworkStatusChange: true, awaitRefetchQueries: true }
+      { notifyOnNetworkStatusChange: true }
     );
 
-    const updateProducts = (uid, currentPage, pageSize) => {
+    const updateProducts = (
+      uid: string,
+      currentPage?: number,
+      pageSize?: number
+    ) => {
       variables.uid = uid;
-      variables.currentPage = currentPage;
-      variables.pageSize = pageSize;
+      if (currentPage) variables.currentPage = currentPage;
+      if (pageSize) variables.pageSize = pageSize;
     };
 
-    const categories = computed(() => result.value?.categories.items ?? []);
-    const items = computed(() => products.result.value?.products.items ?? []);
+    const categories = computed(
+      () => (result.value?.categories.items as Category[]) ?? []
+    );
+    const items = computed(
+      () => (products.result.value?.products.items as Products[]) ?? []
+    );
     const page_info = computed(
-      () => products.result.value?.products.page_info ?? []
+      () => (products.result.value?.products.page_info as PageInfo) ?? []
     );
 
     return {
@@ -186,7 +257,7 @@ export default {
       items,
       loading,
       updateProducts,
-    };
+    } as Data;
   },
 };
 </script>
